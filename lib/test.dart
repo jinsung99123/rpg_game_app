@@ -1,16 +1,33 @@
 /*
 수정해야할 사항
 
-1. 주석추가
-2. 몬스터의 공격력이 지속적으로 감소하는 현상 수정
-3. 방어 논리 수정(방어시 공격받은 수치를 회복해야하는데 공격받지 않아도(첫 번째 턴)체력 회복하는 논리)
-4. 메시지 출력간 2초의 지연시간 추가
-5. 세밀한 게임 방식의 논리 오류 수정
-6. 가독성과 유지보수성을 위한 코드 분리 시도
+1. 주석추가 (완료)
+2. 사용자의 스텟 및 몬스터의 스텟, 턴 표시가 보여지지 않는 현상 수정
+3. 몬스터의 공격력이 지속적으로 감소하는 현상 수정
+4. 방어력 값이 차감되지 않고 몬스터의 공격력만큼 데미지가 들어오는 현상
+5. 방어 논리 수정(방어시 공격받은 수치를 회복해야하는데 공격받지 않아도(첫 번째 턴)체력 회복하는 논리)
+6. 사용자가 몬스터를 먼저 처치하여도(몬스터 체력이 0이하가 되더라도) 몬스터가 한턴은 공격을 하는 현상 수정
+7. 메시지 출력간 2초의 지연시간 추가
+8. 세밀한 게임 방식의 논리 오류 수정
+9. 가독성과 유지보수성을 위한 코드 분리 시도
 
 ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 이번 수정사항
-1. 주석추가
+2. 사용자의 스텟이 보여지지 않는 현상 수정
+-print("${resultMonster.monsterName}의 턴"); 추가
+-print("${player.username} - 체력: ${player.userHp}, 공격력: ${player.userAttack}, 방어력: ${player.userDefense}"); 추가
+-print("${resultMonster.monsterName} - 체력: ${resultMonster.monsterHp}, 공격력: ${resultMonster.monsterAttack}"); 추가
+
+3. 몬스터의 공격력이 지속적으로 감소하는 현상 수정
+-print("${resultMonster.monsterName}이(가) ${player.username}에게 ${resultMonster.monsterAttack -= player.userDefense}의 데미지를 입혔습니다.",);
+ 에서 ${resultMonster.monsterAttack -= player.userDefense} 부분 ${resultMonster.monsterAttack - player.userDefense}로 수정
+
+4. 방어력 값이 차감되지 않고 몬스터의 공격력만큼 데미지가 들어오는 현상
+-player.userHp - resultMonster.monsterAttack 부분을 player.userHp - resultMonster.monsterAttack + player.userDefense;로 수정
+
++ 추가 검출된 오류
+- 사용자 체력에서 데미지가 계산된 체력변화가 없음.
+  - 몬스터의 공격식을 player.userHp -= (resultMonster.monsterAttack - player.userDefense);  로 수정 후 player.Hp출력으로 수정
 
 */
 
@@ -46,13 +63,13 @@ class Monster {                        // 몬스터 클래스 정의
 class Game {
   List<Monster> monsterList = [        // 몬스터 리스트 초기화
     Monster(monsterName: "spiderman", monsterHp: 20, monsterAttack: 5),
-    Monster(monsterName: "thanos", monsterHp: 30, monsterAttack: 5),
+    Monster(monsterName: "thanos", monsterHp: 30, monsterAttack: 15),
     Monster(monsterName: "superman", monsterHp: 30, monsterAttack: 10),
   ];
 
   User player = User(                  // 사용자 정보 초기화
     username: "random",
-    userHp: 50,
+    userHp: 100,
     userAttack: 10,
     userDefense: 5,
   );
@@ -97,11 +114,18 @@ class Game {
               "${player.username}이(가) 방어 태세를 취하여 ${resultMonster.monsterAttack} 만큼 체력을 얻었습니다.",
             );
             break;
-        }                               // 사용자의 행동패턴 조건식 switch문 (공격 or 방어)
-        player.userHp -= resultMonster.monsterAttack;                      // 몬스터 행동 패턴 (공격 고정)
+        }                                                                  // 사용자의 행동패턴 조건식 switch문 (공격 or 방어)
+
+        print("${resultMonster.monsterName}의 턴");
+
+        player.userHp -= (resultMonster.monsterAttack - player.userDefense);                      // 몬스터 행동 패턴 (공격 고정)
         print(
-          "${resultMonster.monsterName}이(가) ${player.username}에게 ${resultMonster.monsterAttack -= player.userDefense}의 데미지를 입혔습니다.",
+          "${resultMonster.monsterName}이(가) ${player.username}에게 ${resultMonster.monsterAttack - player.userDefense}의 데미지를 입혔습니다.",
         );
+
+        print("${player.username} - 체력: ${player.userHp}, 공격력: ${player.userAttack}, 방어력: ${player.userDefense}");
+        print("${resultMonster.monsterName} - 체력: ${resultMonster.monsterHp}, 공격력: ${resultMonster.monsterAttack}");
+
         if (resultMonster.monsterHp <= 0) {                                // 최상위 if, else if문 (몬스터 사망(몬스터 사망시 리스트에서 제거)/플레이어 사망)
           print("${resultMonster.monsterName}을 물리쳤습니다!");
           monsterList.remove(resultMonster);
