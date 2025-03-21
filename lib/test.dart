@@ -7,39 +7,40 @@
 4. 방어력 값이 차감되지 않고 몬스터의 공격력만큼 데미지가 들어오는 현상 (완료!)
 5. 방어 논리 수정(방어시 공격받은 수치를 회복해야하는데 공격받지 않아도(첫 번째 턴)체력 회복하는 논리) (완료!)
 6. 사용자가 몬스터를 먼저 처치하여도(몬스터 체력이 0이하가 되더라도) 몬스터가 한턴은 공격을 하는 현상 수정 (완료!)
-7. 메시지 출력간 2초의 지연시간 추가
-8. 세밀한 게임 방식의 논리 오류 수정
-9. 가독성과 유지보수성을 위한 코드 분리 시도
+7. 메시지 출력간 2초의 지연시간 추가 (완료!)
+8. 세밀한 게임 방식의 논리 오류 수정 (보류)
+9. 가독성과 유지보수성을 위한 코드 분리 시도 (보류)
++추가
+10. 필수 기능 가이드 적용
 
 이번 수정사항
 
-7. 메시지 출력과 2초의 지연시간 추가
+8. 세밀한 게임 방식의 논리 오류 수정 (보류)
+9. 가독성과 유지보수성을 위한 코드 분리 시도 (보류)
 
-- 추가코드:
-- void delayedPrint(String message) async {
-    await Future.delayed(Duration(seconds: 2)); // 2초 딜레이
-    print(message);
+10. 필수 기능 가이드 적용
+조건
+- 게임 시작 시 사용자가 캐릭터의 이름을 입력합니다.
+- 이름은 빈 문자열이 아니어야 합니다.
+- 이름에는 특수문자나 숫자가 포함되지 않아야 합니다.
+- 허용 문자: 한글, 영문 대소문자
+- 힌트(도전): 정규표현식 등을 사용하면 조금 더 편하게 제한된 이름만 입력 받을 수 있습니다.
+
+수정 코드
+Future<String> getValidUsername() async {
+  final RegExp nameRegExp = RegExp(r'^[a-zA-Z가-힣]+$');                                // 한글, 영문 대소문자만 허용 (정규표현식 숙지 요망)
+
+  while (true) {
+    String? input = await stdin.readLineSync();
+    if (input != null && input.isNotEmpty && nameRegExp.hasMatch(input)) {
+      return input;                                                                     // 올바른 입력이면 반환
+    }
+    print("올바르지 않은 이름입니다. 다시 입력하세요 (한글 또는 영문 대소문자만 가능).");
   }
+}
++
+player.username = await getValidUsername(); 로 변경
 
-- 비동기 Future.delayed 함수를 활용해 message를 매개변수로 받아 2초동안 await을 통해 기다립니다.
-- 이후 모든 표시시키고 싶은 print문을 delayedPrint로 변경
-- 메서드에도 async를 적용
-
-- 문제: 그러나 모든 프린트 문에 딜레이를 적용시키니 코드 실행이 안 되는 문제 발생
-- 사용자 입력도 비동기 처리를 했지만 stdin.readLineSync()가 동기 방식이기에 발생하는 문제인 것 같습니다.
-- stdin.readLineSync()를 비동기식으로 처리
-- 메인함수도 비동기식으로 처리
-
-- 수정된 추가 코드: Future<void> delayedPrint(String message) async {
-      await Future.delayed(Duration(seconds: 1)); // 1초 딜레이
-      print(message);
-  }
-
-  Future<String> getInput() async {
-      return await stdin.readLineSync();
-  }
-
-- 숙지해야할 문제: DelayedPrint 사용법, stdin.readLineSync()의 getInput 변환방법
 */
 
 
@@ -50,6 +51,18 @@ import 'dart:async';
 Future<void> delayedPrint(String message) async {
   await Future.delayed(Duration(seconds: 1)); // 1초 딜레이
   print(message);
+}
+
+Future<String> getValidUsername() async {
+  final RegExp nameRegExp = RegExp(r'^[a-zA-Z가-힣]+$');                                // 한글, 영문 대소문자만 허용 (정규표현식 숙지 요망)
+
+  while (true) {
+    String? input = await stdin.readLineSync();
+    if (input != null && input.isNotEmpty && nameRegExp.hasMatch(input)) {
+      return input;                                                                     // 올바른 입력이면 반환
+    }
+    print("올바르지 않은 이름입니다. 다시 입력하세요 (한글 또는 영문 대소문자만 가능).");
+  }
 }
 
 class User {                                                                           // 사용자 클래스 정의
@@ -96,7 +109,7 @@ class Game {
 
   Future<void> mainBattle() async {
     await delayedPrint("캐릭터의 이름을 입력하세요:");
-    player.username = await getInput();
+    player.username = await getValidUsername();
     await delayedPrint("게임을 시작합니다!");
     await delayedPrint(
       "${player.username} - 체력: ${player.userHp}, 공격력: ${player.userAttack}, 방어력: ${player.userDefense}",
